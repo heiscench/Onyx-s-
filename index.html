@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Timetable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #16161f;
+    --border: #1e1e2e;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --line: #1e1e2e;
+
+    --gold: #f59e0b;
+    --blue: #60a5fa;
+    --cyan: #22d3ee;
+    --purple: #7c3aed;
+    --green: #34d399;
+    --pink: #f472b6;
+    --red: #f87171;
+    --yellow: #fde68a;
+    --grey: #94a3b8;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 20px 24px;
+    text-align: center;
+  }
+
+  .header-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .header-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .progress-percent {
+    font-family: 'Syne', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, #60a5fa, #22d3ee, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+  }
+
+  .progress-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    letter-spacing: 0.08em;
+  }
+
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 99px;
+    height: 4px;
+    max-width: 320px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #60a5fa, #22d3ee, #a78bfa);
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .celebration {
+    display: none;
+    background: linear-gradient(135deg, #065f46, #0f4c75);
+    border: 1px solid #34d399;
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin-top: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: #34d399;
+    text-align: center;
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+    letter-spacing: 0.06em;
+  }
+
+  .timeline {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 16px 0;
+    position: relative;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 32px;
+    bottom: 0;
+    width: 1px;
+    background: var(--line);
+  }
+
+  .tl-item {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 10px;
+    position: relative;
+    align-items: flex-start;
+  }
+
+  .tl-dot-col {
+    flex-shrink: 0;
+    width: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 16px;
+  }
+
+  .tl-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tl-card {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: default;
+    transition: background 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .tl-card.clickable {
+    cursor: pointer;
+  }
+
+  .tl-card.clickable:hover {
+    background: var(--surface2);
+    border-color: #2a2a3e;
+  }
+
+  .tl-card.done {
+    background: rgba(52, 211, 153, 0.05);
+    border-color: rgba(52, 211, 153, 0.2);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+
+  .card-time {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .card-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  .card-check {
+    margin-left: auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .done .card-check {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .check-icon {
+    display: none;
+    color: #0a0a0f;
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 900;
+  }
+
+  .done .check-icon {
+    display: block;
+  }
+
+  .card-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+    transition: color 0.15s;
+    line-height: 1.3;
+  }
+
+  .done .card-name {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .card-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Badge colors */
+  .badge-gold { background: rgba(245,158,11,0.15); color: #f59e0b; }
+  .badge-blue { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .badge-cyan { background: rgba(34,211,238,0.15); color: #22d3ee; }
+  .badge-purple { background: rgba(124,58,237,0.15); color: #a78bfa; }
+  .badge-green { background: rgba(52,211,153,0.15); color: #34d399; }
+  .badge-pink { background: rgba(244,114,182,0.15); color: #f472b6; }
+  .badge-red { background: rgba(248,113,113,0.15); color: #f87171; }
+  .badge-yellow { background: rgba(253,230,138,0.12); color: #fde68a; }
+  .badge-grey { background: rgba(148,163,184,0.1); color: #94a3b8; }
+
+  /* Dot colors */
+  .dot-gold { background: #f59e0b; }
+  .dot-blue { background: #60a5fa; }
+  .dot-cyan { background: #22d3ee; }
+  .dot-purple { background: #7c3aed; }
+  .dot-green { background: #34d399; }
+  .dot-pink { background: #f472b6; }
+  .dot-red { background: #f87171; }
+  .dot-yellow { background: #fde68a; }
+  .dot-grey { background: #64748b; }
+
+  /* Non-clickable */
+  .tl-card.fixed-nc {
+    opacity: 0.7;
+    border-style: dashed;
+  }
+
+  .tips {
+    max-width: 680px;
+    margin: 40px auto 0;
+    padding: 0 16px;
+  }
+
+  .tips-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .tips-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .tip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .tip-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .tip-text {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 500px) {
+    .tips-grid { grid-template-columns: 1fr; }
+    .timeline::before { left: 24px; }
+    .tl-dot-col { width: 22px; }
+    .progress-percent { font-size: 42px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Daily Schedule</div>
+  <div class="header-date" id="headerDate"></div>
+  <div class="progress-percent" id="progressPct">0%</div>
+  <div class="progress-label" id="progressLabel">0 of 0 tasks complete</div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressBar"></div>
+  </div>
+  <div class="celebration" id="celebration">All tasks complete. Day well executed.</div>
+</div>
+
+<div class="timeline" id="timeline"></div>
+
+<div class="tips">
+  <div class="tips-title">Pro Tips</div>
+  <div class="tips-grid">
+    <div class="tip-card">
+      <div class="tip-num">01</div>
+      <div class="tip-text">GM post first thing sets the tone — hit it between 6:50–7:20 AM while your audience is waking up.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">02</div>
+      <div class="tip-text">The 2-hour gap after GM lets your first post breathe. Don't rush the feed — quality beats spam.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">03</div>
+      <div class="tip-text">Job hunting 12:30–2:30 PM: treat it like a shift. Applications, DMs, LinkedIn — 2 hours focused beats scattered all day.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">04</div>
+      <div class="tip-text">500 replies by 7 PM is your engagement engine. Front-load early in the day — 50 at a time across sessions.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">05</div>
+      <div class="tip-text">Influencer reposts work best on spread days (Mon/Wed/Fri) — they get more eyeballs when spaced out.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">06</div>
+      <div class="tip-text">Draft tomorrow's posts at 11 PM while today is fresh. Batching prep beats winging it at 7 AM half-asleep.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  try {
+
+    /* ---- DATE UTILITIES ---- */
+    function todayStr() {
+      var d = new Date();
+      return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+    }
+
+    function todayDOW() {
+      return new Date().getDay(); // 0=Sun,1=Mon,...6=Sat
+    }
+
+    function formatDate(d) {
+      var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ' ' + d.getFullYear();
+    }
+
+    function fmtMins(m) {
+      var h = Math.floor(m / 60);
+      var min = m % 60;
+      var ampm = h < 12 ? 'AM' : 'PM';
+      var h12 = h % 12;
+      if (h12 === 0) { h12 = 12; }
+      return h12 + ':' + (min < 10 ? '0' : '') + min + ' ' + ampm;
+    }
+
+    /* ---- SEEDED RANDOM (mulberry32) ---- */
+    function seedRand(seed) {
+      return function() {
+        seed |= 0;
+        seed = seed + 0x6D2B79F5 | 0;
+        var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function dateSeed() {
+      var d = new Date();
+      return d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+    }
+
+    function seededShuffle(arr, rng) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(rng() * (i + 1));
+        var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+      }
+      return a;
+    }
+
+    /* ---- STORAGE ---- */
+    var STORAGE_KEY = 'timetable_v2_' + todayStr();
+
+    function loadState() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) { return JSON.parse(raw); }
+      } catch(e) {}
+      return {};
+    }
+
+    function saveState(state) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch(e) {}
+    }
+
+    // Clean old keys
+    try {
+      var prefix = 'timetable_v';
+      var curKey = STORAGE_KEY;
+      for (var k in localStorage) {
+        if (k.indexOf(prefix) === 0 && k !== curKey) {
+          localStorage.removeItem(k);
+        }
+      }
+    } catch(e) {}
+
+    /* ---- SHUFFLE LOGIC ---- */
+    var rng = seedRand(dateSeed());
+
+    // GM time: 410–440 mins from midnight
+    var gmMins = 410 + Math.floor(rng() * 31); // 6:50–7:20 AM
+
+    // Post types pool (6 posts to shuffle: 2 web2, 2 web3, 2 repost)
+    var postPool = [
+      { type: 'web2', label: 'Web2 Content', badge: 'badge-blue', dot: 'dot-blue', desc: 'Share insight, thread, or take on a mainstream tech topic.' },
+      { type: 'web2', label: 'Web2 Content', badge: 'badge-blue', dot: 'dot-blue', desc: 'Share insight, thread, or take on a mainstream tech topic.' },
+      { type: 'web3', label: 'Web3 Content', badge: 'badge-cyan', dot: 'dot-cyan', desc: 'Alpha, analysis, or community post on-chain or in the ecosystem.' },
+      { type: 'web3', label: 'Web3 Content', badge: 'badge-cyan', dot: 'dot-cyan', desc: 'Alpha, analysis, or community post on-chain or in the ecosystem.' },
+      { type: 'repost1', label: 'Influencer Repost', badge: 'badge-purple', dot: 'dot-purple', desc: 'Pick one to repost: starplatinum or web3nigeria' },
+      { type: 'repost2', label: 'Influencer Repost', badge: 'badge-purple', dot: 'dot-purple', desc: 'Pick one to repost: ola_crrypt or web3righteous' }
+    ];
+
+    var shuffled = seededShuffle(postPool, rng);
+
+    // Influencer repost placement patterns
+    var dow = todayDOW();
+    var isSpreadDay = (dow === 1 || dow === 3 || dow === 5); // Mon, Wed, Fri
+    var spreadPatterns = [[0,2],[0,3],[1,3],[1,4],[2,4],[2,5]];
+    var pairPatterns   = [[0,1],[1,2],[2,3],[3,4],[4,5],[0,3],[1,4]];
+    var patterns = isSpreadDay ? spreadPatterns : pairPatterns;
+    var patIdx = Math.floor(rng() * patterns.length);
+    var repostSlots = patterns[patIdx]; // e.g. [1,4]
+
+    // Build 6 ordered posts matching influencer slots
+    var nonReposts = [];
+    var repostItems = [];
+    var i, p;
+    for (i = 0; i < shuffled.length; i++) {
+      if (shuffled[i].type === 'repost1' || shuffled[i].type === 'repost2') { repostItems.push(shuffled[i]); }
+      else { nonReposts.push(shuffled[i]); }
+    }
+
+    var sixPosts = [];
+    var nrIdx = 0, rpIdx = 0;
+    for (i = 0; i < 6; i++) {
+      if (repostSlots[0] === i || repostSlots[1] === i) {
+        sixPosts.push(repostItems[rpIdx++]);
+      } else {
+        sixPosts.push(nonReposts[nrIdx++]);
+      }
+    }
+
+    /* ---- TIME PLACEMENT ---- */
+    // First 3 posts (before job hunt): gap 2h–2h30m after GM, then spread to 12:20 PM
+    var minAfterGM = gmMins + 120; // min 2h gap
+    var maxAfterGM = gmMins + 150; // max 2h30m
+
+    function randBetween(lo, hi) { return lo + Math.floor(rng() * (hi - lo + 1)); }
+
+    var p1 = randBetween(minAfterGM, maxAfterGM);
+    var windowEnd1 = 740; // 12:20 PM
+    var remaining1 = windowEnd1 - p1 - 40;
+    var p2 = p1 + 40 + Math.floor(rng() * Math.max(1, remaining1 - 40));
+    var p3 = p2 + 40 + Math.floor(rng() * Math.max(1, windowEnd1 - p2 - 80));
+    if (p2 > windowEnd1 - 40) { p2 = windowEnd1 - 40; }
+    if (p3 > windowEnd1) { p3 = windowEnd1; }
+
+    // Last 3 posts (after job hunt 2:30 PM): two windows
+    // Window A: 2:35–5:00 PM (875–1015), Window B: 6:00–7:00 PM (1080–1140)
+    var p4 = randBetween(875, 940);
+    var p5 = p4 + 40 + Math.floor(rng() * Math.max(1, 1015 - p4 - 80));
+    if (p5 > 1015) { p5 = 1015; }
+    var p6 = randBetween(1080, 1130);
+
+    var postTimes = [p1, p2, p3, p4, p5, p6];
+
+    /* ---- BUILD ITEM LIST ---- */
+    var items = [];
+
+    function addFixed(id, time, name, desc, colorBadge, colorDot, badgeLabel, clickable, sortMins) {
+      items.push({ id: id, time: time, name: name, desc: desc, colorBadge: colorBadge, colorDot: colorDot, badgeLabel: badgeLabel, clickable: clickable, dynamic: false, sortMins: sortMins });
+    }
+
+    // Fixed: Wake up 6:30 AM = 390
+    addFixed('wake', '6:30 AM', 'Wake Up', 'Freshen up, breakfast, hydrate. Set yourself up.', 'badge-yellow', 'dot-yellow', 'Morning', false, 390);
+    // Fixed: Review 6:40 AM = 400
+    addFixed('review', '6:40 AM', 'Review Yesterday', 'Check engagement from yesterday. Note what performed well.', 'badge-grey', 'dot-grey', 'Review', false, 400);
+
+    // GM Post
+    items.push({ id: 'gm', time: fmtMins(gmMins), name: 'GM Post', desc: 'Fire your daily GM. Set the tone for the feed.', colorBadge: 'badge-gold', colorDot: 'dot-gold', badgeLabel: 'GM', clickable: true, dynamic: false, sortMins: gmMins });
+
+    // 3 pre-job-hunt posts
+    for (i = 0; i < 3; i++) {
+      p = sixPosts[i];
+      var pid = 'post_' + i;
+      var pdesc = p.desc;
+      items.push({ id: pid, time: fmtMins(postTimes[i]), name: p.label, desc: pdesc, colorBadge: p.badge, colorDot: p.dot, badgeLabel: p.label.split(' ')[0], clickable: true, dynamic: true, sortMins: postTimes[i] });
+    }
+
+    // Job hunting 12:30 PM = 750
+    addFixed('job', '12:30 – 2:30 PM', 'Job Hunting', 'Applications, DMs, LinkedIn outreach. Full focus for 2 hours.', 'badge-blue', 'dot-blue', 'Job Hunt', true, 750);
+
+    // 3 post-job-hunt posts
+    for (i = 3; i < 6; i++) {
+      p = sixPosts[i];
+      var pid2 = 'post_' + i;
+      var pdesc2 = p.desc;
+      items.push({ id: pid2, time: fmtMins(postTimes[i]), name: p.label, desc: pdesc2, colorBadge: p.badge, colorDot: p.dot, badgeLabel: p.label.split(' ')[0], clickable: true, dynamic: true, sortMins: postTimes[i] });
+    }
+
+    // Rest 5:00 PM = 1020
+    addFixed('rest', '5:00 – 6:00 PM', 'Rest and Recharge', 'Step away. Walk, eat, or do nothing. Protect your energy.', 'badge-green', 'dot-green', 'Rest', true, 1020);
+    // 500 Replies 7:00 PM = 1140 (sort before Host Space at same time)
+    addFixed('replies', '7:00 PM', '500 Replies Done', 'End of posting day. All reply targets hit. Mark and move on.', 'badge-pink', 'dot-pink', '500 Replies', true, 1140);
+    // Host Space 7:00 PM = 1141
+    addFixed('hostspace', '7:00 – 8:00 PM', 'Host Your Space', 'Run your Twitter Space. Engage, bring guests, build community.', 'badge-cyan', 'dot-cyan', 'Host Space', true, 1141);
+    // Join Spaces 8:00 PM = 1200
+    addFixed('joinspace', '8:00 – 9:00 PM', 'Join Other Spaces', 'Drop into active Spaces. Contribute, network, get known.', 'badge-cyan', 'dot-cyan', 'Join Spaces', true, 1200);
+    // YouTube 9:00 PM = 1260
+    addFixed('yt', '9:00 – 10:30 PM', 'YouTube Content', 'Record, edit, or plan your next video. Long-form content compound.', 'badge-red', 'dot-red', 'YouTube', true, 1260);
+    // Discord 10:30 PM = 1350
+    addFixed('discord', '10:30 – 11:00 PM', 'Discord Outreach', 'Send 50 DMs across Discord servers. Build connections intentionally.', 'badge-purple', 'dot-purple', 'Discord', true, 1350);
+    // Draft 11:00 PM = 1380
+    addFixed('draft', '11:00 – 11:30 PM', 'Draft Tomorrow\'s Posts', 'Write your post queue for tomorrow. Sleep knowing it\'s ready.', 'badge-grey', 'dot-grey', 'Draft', true, 1380);
+    // Sleep midnight = 1440
+    addFixed('sleep', '12:00 AM', 'Sleep', '6 hours 30 minutes. 12:00 AM to 6:30 AM. Non-negotiable.', 'badge-yellow', 'dot-yellow', 'Sleep', false, 1440);
+
+    // Sort all items chronologically
+    items.sort(function(a, b) { return a.sortMins - b.sortMins; });
+
+/* ---- STATE ---- */
+    var state = loadState();
+
+    /* ---- RENDER ---- */
+    var timeline = document.getElementById('timeline');
+    var el = document.getElementById('headerDate');
+    el.textContent = formatDate(new Date());
+
+    function makeCard(item) {
+      var div = document.createElement('div');
+      div.className = 'tl-item';
+      div.id = 'item_' + item.id;
+
+      var dotCol = document.createElement('div');
+      dotCol.className = 'tl-dot-col';
+      var dot = document.createElement('div');
+      dot.className = 'tl-dot ' + item.colorDot;
+      dotCol.appendChild(dot);
+
+      var card = document.createElement('div');
+      card.className = 'tl-card' + (item.clickable ? ' clickable' : ' fixed-nc') + (state[item.id] ? ' done' : '');
+
+      var top = document.createElement('div');
+      top.className = 'card-top';
+
+      var timeEl = document.createElement('span');
+      timeEl.className = 'card-time';
+      timeEl.textContent = item.time;
+
+      var badge = document.createElement('span');
+      badge.className = 'card-badge ' + item.colorBadge;
+      badge.textContent = item.badgeLabel;
+
+      top.appendChild(timeEl);
+      top.appendChild(badge);
+
+      if (item.clickable) {
+        var check = document.createElement('div');
+        check.className = 'card-check';
+        var checkIcon = document.createElement('span');
+        checkIcon.className = 'check-icon';
+        checkIcon.textContent = '\u2713';
+        check.appendChild(checkIcon);
+        top.appendChild(check);
+      }
+
+      var name = document.createElement('div');
+      name.className = 'card-name';
+      name.textContent = item.name;
+
+      var desc = document.createElement('div');
+      desc.className = 'card-desc';
+      desc.textContent = item.desc;
+
+      card.appendChild(top);
+      card.appendChild(name);
+      card.appendChild(desc);
+
+      if (item.clickable) {
+        (function(it, c) {
+          c.addEventListener('click', function() {
+            state[it.id] = !state[it.id];
+            saveState(state);
+            if (state[it.id]) { c.className = 'tl-card clickable done'; }
+            else { c.className = 'tl-card clickable'; }
+            updateProgress();
+          });
+        })(item, card);
+      }
+
+      div.appendChild(dotCol);
+      div.appendChild(card);
+      return div;
+    }
+
+    for (var j = 0; j < items.length; j++) {
+      timeline.appendChild(makeCard(items[j]));
+    }
+
+    /* ---- PROGRESS ---- */
+    var clickableItems = [];
+    for (var ci = 0; ci < items.length; ci++) {
+      if (items[ci].clickable) { clickableItems.push(items[ci]); }
+    }
+
+    function updateProgress() {
+      var done = 0;
+      for (var x = 0; x < clickableItems.length; x++) {
+        if (state[clickableItems[x].id]) { done++; }
+      }
+      var total = clickableItems.length;
+      var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+      document.getElementById('progressPct').textContent = pct + '%';
+      document.getElementById('progressLabel').textContent = done + ' of ' + total + ' tasks complete';
+      document.getElementById('progressBar').style.width = pct + '%';
+
+      var cel = document.getElementById('celebration');
+      cel.style.display = pct === 100 ? 'block' : 'none';
+    }
+
+    updateProgress();
+
+  } catch(e) {
+    var errDiv = document.createElement('div');
+    errDiv.style.cssText = 'color:#f87171;padding:20px;font-family:monospace;font-size:12px;';
+    errDiv.textContent = 'Error: ' + e.message;
+    document.body.insertBefore(errDiv, document.body.firstChild);
+  }
+})();
+</script>
+</body>
+</html>
